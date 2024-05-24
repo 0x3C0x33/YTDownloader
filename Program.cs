@@ -7,38 +7,40 @@ namespace YTDownloader {
         private static YoutubeClient youtube = new YoutubeClient();
         private static String videoUrl = "",
                 titulo = "",
-                ruta = "//192.168.1.104/adrian/Multimedia/Musica/",
-                rutaFija = "//192.168.1.104/adrian/Multimedia/Musica/",
+                ruta = "",
+                rutaFija = "",
                 genero = "";
 
-        static async Task Main(string[] args) {
+        public static void Main(string[] args) {
             Console.WriteLine("=== Descargador de música de YouTube === ");
             Console.WriteLine("           Hecho por 0x3C0x33            ");
             Console.WriteLine("    usando: YouTubeExplode by Tyrrrz     ");
 
             Console.WriteLine("Elija modo de descarga 1:(canción); 2:(playlist)");
-            switch (Convert.ToByte(Console.ReadKey())) {
+            
+            switch (Convert.ToByte(Console.ReadLine())) {
                 case 1: cancion(); break;
                 case 2: lista(); break;
             }
         }
 
-        private static async Task lista() {
+        //TODO: Lista por terminar
+        private static void lista() {
             int contador = 1;
             do {
                 Console.WriteLine($"\n --- Lista: {contador} ---");
                 Console.WriteLine("Para salir: \\ o ç");
                 Console.Write("URL: ");
-                videoUrl = await pregunta();
+                videoUrl = pregunta();
 
                 Console.Write("Ruta: ");
-                String respuesta = await pregunta();
+                String respuesta = pregunta();
                 ruta = "" == respuesta ? ruta : respuesta;
 
                 Console.WriteLine("Nuevo Genero? (1:si, 2:NO)");
-                if (Convert.ToByte(Console.ReadKey()) == 1) {
+                if (Convert.ToByte(Console.ReadLine()) == 1) {
                     Console.Write("Nombre del nuevo genero: ");
-                    string nuevoGenero = await pregunta();
+                    string nuevoGenero = pregunta();
                 } else {
                     String[] generos = Directory.GetDirectories(ruta);
                     Console.Write("Generos: ");
@@ -46,65 +48,73 @@ namespace YTDownloader {
                         Console.Write(i + 1 + ":" + Path.GetFileName(generos[i]) + " || ");
                     }
                     Console.Write("\nGenero: ");
-                    respuesta = await pregunta();
+                    respuesta = pregunta();
                     genero = "" != respuesta ? Path.GetFileName(generos[int.Parse(respuesta) - 1]) + "/" : respuesta;
                 }
 
                 ruta = rutaFija + genero;
-                titulo = await getTituloAsync(videoUrl);
+                getTituloAsync();
                 Console.WriteLine($"Descargando '{titulo}' en '{genero}' ruta: {ruta}");
-                await descargar(videoUrl, titulo, ruta);
+                descargar();
                 contador++;
             } while (true);
             throw new NotImplementedException();
         }
 
-        private static async Task cancion() {
+        private static void cancion() {
             int contador = 1;
             do {
                 Console.WriteLine($"\n --- Musica: {contador} ---");
                 Console.WriteLine("Para salir: \\ o ç");
                 Console.Write("URL: ");
-                videoUrl = await pregunta();
+                videoUrl = pregunta();
 
                 Console.Write("Ruta: ");
-                String respuesta = await pregunta();
-                ruta = "" == respuesta ? ruta : respuesta;
+                String respuesta = pregunta();
+                rutaFija = "" == respuesta ? rutaFija : respuesta;
+                String[] generos = new String[1];
+                try {
+                    generos = Directory.GetDirectories(rutaFija);
 
-                String[] generos = Directory.GetDirectories(ruta);
-                Console.Write("Generos: ");
-                for (global::System.Int32 i = 0; i < generos.Length; i++) {
-                    Console.Write(i + 1 + ":" + Path.GetFileName(generos[i]) + " || ");
+                    Console.Write("Generos: ");
+                    for (global::System.Int32 i = 0; i < generos.Length; i++) {
+                        Console.Write(i + 1 + ":" + Path.GetFileName(generos[i]) + " || ");
+                    }
+                } catch (Exception) {
+
                 }
-                Console.Write("\nGenero: ");
-                respuesta = await pregunta();
-                genero = "" != respuesta ? Path.GetFileName(generos[int.Parse(respuesta) - 1]) + "/" : respuesta;
-
-                ruta = rutaFija + genero;
-                titulo = await getTituloAsync(videoUrl);
+                Console.Write("\nGénero (Nombre para crear género): ");
+                respuesta = pregunta();
+                try {
+                    genero = "" != respuesta ? Path.GetFileName(generos[int.Parse(respuesta) - 1]) + "/" : respuesta;
+                } catch (FormatException) {
+                    genero = respuesta;
+                    Directory.CreateDirectory(rutaFija + "/" + genero);
+                }
+                ruta = rutaFija + "/" + genero;
+                getTituloAsync();
                 Console.WriteLine($"Descargando '{titulo}' en '{genero}' ruta: {ruta}");
-                await descargar(videoUrl, titulo, ruta);
+                descargar();
                 contador++;
             } while (true);
         }
 
-        private static async Task<string> pregunta() {
+        private static string pregunta() {
             String respuesta = "";
             try {
                 respuesta = Console.ReadLine();
-                if (respuesta == "\\" || respuesta == "ç") {
+                if (respuesta == @"\" || respuesta == "ç") {
                     Console.WriteLine("Saliendo...");
                     Environment.Exit(0);
-                } else if (respuesta == "") {
-                    return "";
                 }
                 return respuesta;
-            } catch (Exception) {
+            } catch (Exception e) {
+                Console.WriteLine(e);
                 throw;
             }
         }
 
-        private static async Task descargar(string videoUrl, string titulo, string ruta) {
+        private static async void descargar() {
             var streamManifest = await youtube.Videos.Streams.GetManifestAsync(videoUrl);
 
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
@@ -119,9 +129,9 @@ namespace YTDownloader {
             }
         }
 
-        private static async Task<string> getTituloAsync(string videoUrl) {
-            var video = await youtube.Videos.GetAsync(videoUrl);
-            return video.Title;
+        private static async void getTituloAsync() {
+            var vid = await youtube.Videos.GetAsync(videoUrl);
+            titulo = vid.Title;
         }
     }
 }
